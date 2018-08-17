@@ -1,5 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
+const nodeExternals = require('webpack-node-externals');
 
 module.exports = {
     entry: { server: './server.ts' },
@@ -7,7 +8,12 @@ module.exports = {
     target: 'node',
     mode: 'none',
     // this makes sure we include node_modules and other 3rd party libraries
-    externals: [/node_modules/],
+    externals: [
+        /node_modules/,
+        nodeExternals({
+            whitelist: [/^hammerjs/],
+        }),
+    ],
     output: {
         path: path.join(__dirname, 'tmp'),
         filename: '[name].js',
