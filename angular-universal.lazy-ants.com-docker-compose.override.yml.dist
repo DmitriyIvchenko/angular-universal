@@ -1,0 +1,18 @@
+version: "2.0"
+
+services:
+    nodejs:
+        command: >
+            - /bin/sh
+            - -c
+            - |
+                pm2-runtime pm2-process.yml # run the node server forcely before starting to build the new instance
+                npm install
+                npm run build:ssr
+                npm run silent:update
+                pm2-runtime pm2-process.yml
+
+    nginx:
+        ports:
+            - 80:80
+            - 443:443

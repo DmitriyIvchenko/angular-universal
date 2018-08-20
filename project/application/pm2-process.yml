@@ -1,0 +1,10 @@
+apps:
+  - script: './dist/server.js'
+    name: 'angular-universal'
+    exec_mode: 'cluster'
+    instances: 'max'
+    log_date_format: 'YYYY-MM-DD HH:mm Z'
+    error_file: '/var/www/angular-universal/logs/pm2/error.log'
+    out_file: '/var/www/angular-universal/logs/pm2/access.log'
+    combine_logs: true
+    merge_logs: true

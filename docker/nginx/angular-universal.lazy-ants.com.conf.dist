@@ -1,0 +1,135 @@
+user www-data;
+worker_processes 4;
+pid /run/nginx.pid;
+
+events {
+    worker_connections 2048;
+    multi_accept on;
+    use epoll;
+}
+
+http {
+    server_tokens off;
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 15;
+    types_hash_max_size 2048;
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    access_log off;
+    error_log off;
+    log_format compression '$remote_addr - $remote_user [$time_local] '
+                           '"$request" $status $body_bytes_sent '
+                           '"$http_referer" "$http_user_agent" "$gzip_ratio"';
+    gzip on;
+    gzip_disable "msie6";
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_buffers 16 8k;
+    gzip_http_version 1.1;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+    server_names_hash_bucket_size 64;
+
+    server {
+        listen 443 ssl;
+        keepalive_timeout 70;
+        expires 0;
+        server_name angular-universal.lazy-ants.com;
+
+        ssl_certificate /etc/letsencrypt/live/angular-universal.lazy-ants.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/angular-universal.lazy-ants.com/privkey.pem;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+
+        merge_slashes off;
+        rewrite ^(.*?)//+(.*?)$ https://$host$1 permanent;
+
+        location ~* \.(ico|css|js|gif|jpeg|jpg|png|woff|ttf|otf|svg|woff2|eot)$ {
+            etag on;
+            expires 168h;
+            add_header Cache-Control "max-age=86400,must-revalidate";
+            add_header Vary User-Agent;
+            add_header 'Access-Control-Allow-Headers' 'Authorization,Content-Type,If-Match';
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_http_version 1.1;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header Host $host;
+            proxy_pass http://nodejs:4000;
+        }
+
+        location / {
+            gzip on;
+            etag on;
+            expires 24h;
+            add_header Cache-Control "max-age=86400,must-revalidate";
+            add_header Vary User-Agent;
+            add_header 'Access-Control-Allow-Headers' 'Authorization,Content-Type,If-Match';
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_http_version 1.1;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header Host $host;
+            proxy_pass http://nodejs:4000;
+        }
+
+        location /robots.txt {
+            add_header Content-Type text/plain;
+            return 200 "User-agent: *\nDisallow: /\n";
+        }
+
+        location = /index.html {
+            return 301 https://$host;
+        }
+
+        location = /index.php {
+            return 301 https://$host;
+        }
+
+        error_page 502 /502.html;
+
+        location = /502.html {
+            try_files 502.html @error;
+            internal;
+        }
+
+        location @error {
+            root /var/www/angular-universal;
+        }
+
+        error_log /var/www/angular-universal/logs/nginx/error.log error;
+        access_log /var/www/angular-universal/logs/nginx/access.log compression;
+    }
+
+    server {
+        listen 80;
+        keepalive_timeout 70;
+        server_name angular-universal.lazy-ants.com;
+        
+        return 301 https://$host$request_uri;
+
+        error_log /var/www/angular-universal/logs/nginx/error.log error;
+        access_log /var/www/angular-universal/logs/nginx/access.log compression;
+    }
+
+    server {
+        listen 80;
+        listen 443 ssl;
+        keepalive_timeout 70;
+        server_name www.angular-universal.lazy-ants.com;
+        
+        ssl_certificate /etc/letsencrypt/live/www.angular-universal.lazy-ants.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/www.angular-universal.lazy-ants.com/privkey.pem;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+    
+        return 301 https://angular-universal.lazy-ants.com$request_uri;
+
+        error_log /var/www/angular-universal/logs/nginx/error.log error;
+        access_log /var/www/angular-universal/logs/nginx/access.log compression;
+    }
+
+    open_file_cache max=100;
+}

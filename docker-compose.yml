@@ -19,5 +19,7 @@ services:
     nginx:
         build: docker/nginx
         restart: always
+        volumes:
+            - /etc/letsencrypt:/etc/letsencrypt
         volumes_from:
             - application
