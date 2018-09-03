@@ -1,6 +1,5 @@
 const path = require('path');
 const webpack = require('webpack');
-const nodeExternals = require('webpack-node-externals');
 
 module.exports = {
     entry: { server: './server.ts' },
@@ -8,19 +7,22 @@ module.exports = {
     target: 'node',
     mode: 'none',
     // this makes sure we include node_modules and other 3rd party libraries
-    externals: [
-        /node_modules/,
-        nodeExternals({
-            whitelist: [/^hammerjs/],
-        }),
-    ],
+    externals: [/node_modules/],
     output: {
         path: path.join(__dirname, 'tmp'),
         filename: '[name].js',
     },
     module: {
         rules: [
-            { test: /\.ts$/, loader: 'ts-loader' },
+            {
+                test: /\.ts$/,
+                loader: 'ts-loader'
+            },
+            {
+                test: /hammerjs/,
+                loader: 'bundle-loader',
+                options: { lazy: true },
+            },
             {
                 // Mark files inside `@angular/core` as using SystemJS style dynamic imports.
                 // Removing this will cause deprecation warnings to appear.
